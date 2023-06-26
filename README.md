@@ -3,6 +3,4 @@
 A (work in progress) COBOL to Rust transpiler
 
 ## Progress
-- [X] Lexer
-- [ ] Parser
-- [ ] Code Generation
+Anything in cobol/test.cob can be successfully generated into rust code
