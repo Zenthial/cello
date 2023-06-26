@@ -1,15 +1,18 @@
 use logos::Logos;
+use num_derive::{FromPrimitive, ToPrimitive};
 
 use std::{
     fmt::{Display, Formatter},
     sync::Arc,
 };
 
-#[derive(Logos, Debug, Clone, Copy, PartialEq)]
+#[derive(
+    Logos, Debug, Clone, Copy, PartialEq, Hash, PartialOrd, Ord, Eq, FromPrimitive, ToPrimitive,
+)]
 #[logos(skip r"[ \t\r\n\f]")]
 pub enum Token {
     #[regex(r#""([^"\\]|\\t|\\u|\\n|\\")*""#)]
-    StringLiteral,
+    StringLiteral = 0,
 
     // Punctuation
     #[token(".")]
@@ -38,14 +41,20 @@ pub enum Token {
     #[regex(r#"[0-9]+"#)]
     Int,
 
+    #[regex("[A-Z]+ DIVISION")]
+    Division,
+
     #[regex("[a-zA-Z_-]+")]
     Identifier,
+
+    Root,
+    DivisionRoot,
 }
 
 #[derive(Debug)]
 pub struct Lexeme {
-    token: Token,
-    kind: Arc<str>,
+    pub token: Token,
+    pub kind: Arc<str>,
 }
 
 impl Display for Lexeme {
@@ -64,8 +73,12 @@ impl<'a> Lexer<'a> {
             source: Token::lexer(source_str),
         }
     }
+}
 
-    pub fn next(&mut self) -> Option<Lexeme> {
+impl<'a> Iterator for Lexer<'a> {
+    type Item = Lexeme;
+
+    fn next(&mut self) -> Option<Self::Item> {
         if let Ok(tok) = self.source.next()? {
             return Some(Lexeme {
                 token: tok,
