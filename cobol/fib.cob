@@ -1,20 +1,26 @@
-data division.
-working-storage section.
-01 n.
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. SAMPLE.
 
-procedure division.
-perform show-factorial varying n from 1 to 10.
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
 
-show-factorial section.
-local result.
-perform factorial using n giving result.
-display n "! = " result.
+         77 fact pic 9(15) comp.
+         77 n pic 99.
+         77 i pic 99.
+         77 ist pic XX.
+         77 factst pic X(18).
 
-factorial section using n.
-local m.
-if n = 1 then return n.
-subtract 1 from n giving m.
-perform factorial using m giving m.
-multiply n by m.
-return m.
-
+       PROCEDURE DIVISION.
+         move 16 to n
+         move 0 to i
+         move 1 to fact
+         perform until i greater than n
+           move i to ist
+           move fact to factst
+           display ist "! = " factst
+           add 1 to i
+           multiply i by fact
+             on size error display "value too big"
+           end-multiply
+         end-perform.
+         stop run.
