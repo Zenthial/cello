@@ -1,4 +1,5 @@
 mod parser;
+mod translate;
 
 use std::{env, fs::read_to_string};
 
@@ -10,6 +11,7 @@ fn main() {
 
     let parser = parser::Parser::new(&file_string);
     let ast = parser.parse();
+    let file = translate::translate(ast);
 
-    println!("{:?}", ast);
+    println!("{}", file);
 }

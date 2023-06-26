@@ -2,7 +2,7 @@
 use std::sync::Arc;
 
 #[derive(Debug)]
-pub struct Ident(Arc<str>);
+pub struct Ident(pub Arc<str>);
 
 impl Ident {
     pub fn new(name: &str) -> Self {
@@ -35,8 +35,8 @@ impl Value {
 
 #[derive(Debug)]
 pub struct Infix {
-    src: Value,
-    dest: Ident,
+    pub src: Value,
+    pub dest: Ident,
 }
 
 #[derive(Debug)]
