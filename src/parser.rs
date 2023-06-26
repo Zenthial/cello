@@ -1,112 +1,101 @@
-use crate::lexer::{Lexeme, Lexer, Token};
-use crate::syntax::Language;
-
-use rowan::{GreenNode, GreenNodeBuilder, Language as _};
-
+#![allow(dead_code)]
 use std::sync::Arc;
 
+#[derive(Debug)]
+pub struct Ident(Arc<str>);
+
+impl Ident {
+    pub fn new(name: &str) -> Self {
+        Self(Arc::from(name))
+    }
+}
+
+#[derive(Debug)]
+pub enum Value {
+    Number(i32),
+    Identifier(Ident),
+    String(Arc<str>),
+}
+
+impl Value {
+    pub fn derive(val: &str) -> Self {
+        let try_parse = val.parse::<i32>();
+        if let Ok(value) = try_parse {
+            return Self::Number(value);
+        }
+
+        if val.starts_with('\"') && val.ends_with('\"') {
+            let actual_string = val.strip_prefix('\"').unwrap().strip_suffix('\"').unwrap();
+            return Self::String(Arc::from(actual_string));
+        }
+
+        Value::Identifier(Ident::new(val))
+    }
+}
+
+#[derive(Debug)]
+pub struct Infix {
+    src: Value,
+    dest: Ident,
+}
+
+#[derive(Debug)]
+pub enum Instruction {
+    Move(Infix),
+    Add(Infix),
+}
+
 pub struct Parser {
-    lexemes: Box<[Lexeme]>,
-    cursor: usize,
-    builder: GreenNodeBuilder<'static>,
+    contents: Arc<str>,
 }
 
 impl Parser {
-    pub fn new(parse_str: &str) -> Self {
-        Parser {
-            lexemes: Lexer::new(parse_str).collect(),
-            builder: GreenNodeBuilder::new(),
-            cursor: 0,
+    pub fn new(contents: &str) -> Self {
+        Self {
+            contents: Arc::from(contents.to_lowercase()),
         }
     }
 
-    pub fn parse(mut self) -> GreenNode {
-        self.builder.start_node(Language::kind_to_raw(Token::Root));
+    pub fn parse(&self) -> Vec<Instruction> {
+        let split: Vec<&str> = self.contents.split("procedure division.").collect();
 
-        // there should be 3-4 divisions
-        for _ in 0..3 {
-            self.parse_division();
-        }
-
-        if self.cursor != self.lexemes.len() {
-            self.parse_division();
-        }
-
-        self.builder.finish_node();
-
-        self.builder.finish()
+        let procedure = split.get(1).unwrap().trim_start();
+        self.parse_procedure(procedure)
     }
 
-    fn parse_division(&mut self) {
-        let div_token = &self.lexemes[self.cursor];
+    fn parse_procedure(&self, procedure: &str) -> Vec<Instruction> {
+        let mut instructions = vec![];
+        for line in procedure.lines() {
+            let words: Vec<&str> = line.split_whitespace().collect();
+            let instruction = self.generate_instruction(words);
+            instructions.push(instruction);
+        }
 
-        if div_token.token == Token::Division {
-            self.builder
-                .start_node(Language::kind_to_raw(Token::DivisionRoot));
-            self.add_token(div_token.token.clone(), div_token.kind.clone());
+        instructions
+    }
 
-            loop {
-                if self.cursor >= self.lexemes.len() {
-                    break;
-                }
-                let token = &self.lexemes[self.cursor];
+    fn generate_instruction(&self, words: Vec<&str>) -> Instruction {
+        let instruction = words[0];
 
-                if token.token == Token::Division {
-                    break;
-                }
-
-                self.parse_functionality(token.token.clone(), token.kind.clone());
-            }
-
-            self.builder.finish_node();
+        match instruction {
+            "move" | "add" => self.generate_infix_instruction(instruction, &words[1..]),
+            _ => unimplemented!(),
         }
     }
 
-    fn parse_functionality(&mut self, token: Token, text: Arc<str>) {
-        match &*text {
-            "add" | "move" | "multiply" => {
-                let token = match &*text {
-                    "add" => Token::Add,
-                    "move" => Token::Move,
-                    "multiply" => Token::Multiply,
-                    // impossible arm
-                    _ => Token::Root,
-                };
-                self.builder.start_node(Language::kind_to_raw(token));
-                self.cursor += 1;
-                if !self.parse_infix() {
-                    panic!("infix did not have proper arguments");
-                }
-                self.builder.finish_node();
-            }
-            _ => self.add_token(token, text),
+    fn generate_infix_instruction(&self, inst: &str, operands: &[&str]) -> Instruction {
+        let src = operands[0];
+        let dest = operands[2];
+
+        let infix = Infix {
+            src: Value::derive(src),
+            dest: Ident::new(dest),
+        };
+
+        match inst {
+            "move" => Instruction::Move(infix),
+            "add" => Instruction::Add(infix),
+            _ => unreachable!(),
         }
-    }
-
-    fn parse_infix(&mut self) -> bool {
-        let left = &self.lexemes[self.cursor].clone();
-        let infix = &self.lexemes[self.cursor + 1].clone();
-        let right = &self.lexemes[self.cursor + 2].clone();
-
-        let binding = infix.kind.to_lowercase();
-        let infix_str = binding.as_str();
-        match infix_str {
-            "by" | "to" => {
-                self.add_token(left.token, left.kind.clone());
-                self.add_token(infix.token, infix.kind.clone());
-                self.add_token(right.token, right.kind.clone());
-            }
-            _ => {
-                return false;
-            }
-        }
-
-        self.cursor += 3;
-        return true;
-    }
-
-    fn add_token(&mut self, tok: Token, text: Arc<str>) {
-        self.builder.token(Language::kind_to_raw(tok), &text);
-        self.cursor += 1;
     }
 }

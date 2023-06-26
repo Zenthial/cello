@@ -14,11 +14,5 @@
          move 16 to n
          move 0 to i
          move 1 to fact
-         perform until i greater than n
-           move i to ist
-           move fact to factst
-           display ist "! = " factst
-           add 1 to i
-           multiply i by fact
-         end-perform.
-         stop run.
+         add 1 to fact
+         add i to n
