@@ -63,8 +63,15 @@ impl Parser {
     }
 
     fn parse_functionality(&mut self, token: Token, text: Arc<str>) {
-        match token {
-            Token::Add | Token::Move | Token::Multiply => {
+        match &*text {
+            "add" | "move" | "multiply" => {
+                let token = match &*text {
+                    "add" => Token::Add,
+                    "move" => Token::Move,
+                    "multiply" => Token::Multiply,
+                    // impossible arm
+                    _ => Token::Root,
+                };
                 self.builder.start_node(Language::kind_to_raw(token));
                 self.cursor += 1;
                 if !self.parse_infix() {

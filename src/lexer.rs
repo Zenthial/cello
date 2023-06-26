@@ -9,10 +9,24 @@ use std::{
 #[derive(
     Logos, Debug, Clone, Copy, PartialEq, Hash, PartialOrd, Ord, Eq, FromPrimitive, ToPrimitive,
 )]
-#[logos(skip r"[ \t\r\n\f]")]
+#[logos(skip r"[ \t\n\f]+")]
 pub enum Token {
     #[regex(r#""([^"\\]|\\t|\\u|\\n|\\")*""#)]
-    StringLiteral = 0,
+    StringLiteral,
+
+    #[regex("[a-zA-Z]+ (division|DIVISION|Division)")]
+    Division,
+
+    #[regex("[a-zA-Z_-][a-zA-Z0-9_-]*")]
+    Identifier,
+
+    // necessary keywords
+    #[token("multiply")]
+    Multiply,
+    #[token("add")]
+    Add,
+    #[token("move")]
+    Move,
 
     // Punctuation
     #[token(".")]
@@ -40,24 +54,6 @@ pub enum Token {
 
     #[regex(r#"[0-9]+"#)]
     Int,
-
-    #[token("multiply")]
-    Multiply,
-
-    #[token("add")]
-    Add,
-
-    #[token("move")]
-    Move,
-
-    #[token("display")]
-    Display,
-
-    #[regex("[a-zA-Z]+ (division|DIVISION|Division)")]
-    Division,
-
-    #[regex("[a-zA-Z_-]+")]
-    Identifier,
 
     Root,
     DivisionRoot,
@@ -99,5 +95,38 @@ impl<'a> Iterator for Lexer<'a> {
         } else {
             return None;
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use logos::Logos;
+
+    use crate::lexer::Token;
+
+    #[test]
+    fn test_add() {
+        let mut lexer = Token::lexer("add");
+        assert_eq!(lexer.next().unwrap().unwrap(), Token::Add);
+    }
+
+    // this fails
+    #[test]
+    fn test_add_to() {
+        let mut lexer = Token::lexer("add 1 to n");
+        assert_eq!(lexer.next().unwrap().unwrap(), Token::Add);
+    }
+
+    // this fails
+    #[test]
+    fn test_add_space() {
+        let mut lexer = Token::lexer("add 1 to n");
+        assert_eq!(lexer.next().unwrap().unwrap(), Token::Add);
+    }
+
+    #[test]
+    fn test_period_space() {
+        let mut lexer = Token::lexer(". ");
+        assert_eq!(lexer.next().unwrap().unwrap(), Token::Period);
     }
 }
