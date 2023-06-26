@@ -3,6 +3,6 @@
 A (work in progress) COBOL to Rust transpiler
 
 ## Progress
-- [ ] Lexer
+- [X] Lexer
 - [ ] Parser
 - [ ] Code Generation
