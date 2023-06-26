@@ -41,7 +41,19 @@ pub enum Token {
     #[regex(r#"[0-9]+"#)]
     Int,
 
-    #[regex("[A-Z]+ DIVISION")]
+    #[token("multiply")]
+    Multiply,
+
+    #[token("add")]
+    Add,
+
+    #[token("move")]
+    Move,
+
+    #[token("display")]
+    Display,
+
+    #[regex("[a-zA-Z]+ (division|DIVISION|Division)")]
     Division,
 
     #[regex("[a-zA-Z_-]+")]
@@ -51,7 +63,7 @@ pub enum Token {
     DivisionRoot,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Lexeme {
     pub token: Token,
     pub kind: Arc<str>,
