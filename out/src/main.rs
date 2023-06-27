@@ -8,4 +8,10 @@ fn main() {
     fact = 1;
     fact += 1;
     n += i;
+    println!(
+        "{}{}{}",
+        format!("{}", n),
+        format!("{}", "!="),
+        format!("{}", fact)
+    );
 }
