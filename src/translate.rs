@@ -51,6 +51,18 @@ pub fn translate(instructions: Vec<Instruction>) -> String {
                 let operation_text = generate_add(infix);
                 operations += operation_text.as_str();
             }
+            Instruction::Print(values) => {
+                let mut print_string = String::from("println!(\"");
+                let mut arguments_string = String::new();
+                for v in values {
+                    print_string += "{}";
+                    arguments_string += format!(", format!(\"{{}}\", {})", v).as_str();
+                }
+
+                print_string += "\"";
+                arguments_string += ");\n";
+                operations += format!("{}{}", print_string, arguments_string).as_str();
+            }
         }
     }
 

@@ -16,3 +16,4 @@
          move 1 to fact
          add 1 to fact
          add i to n
+         display n "!=" fact
