@@ -1,3 +1,4 @@
+mod generate;
 mod parser;
 mod translate;
 
@@ -13,5 +14,7 @@ fn main() {
     let ast = parser.parse();
     let file = translate::translate(ast);
 
-    println!("{}", file);
+    if let Err(e) = generate::generate(file) {
+        panic!("{}", e);
+    }
 }

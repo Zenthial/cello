@@ -42,7 +42,7 @@ pub fn translate(instructions: Vec<Instruction>) -> String {
                 operations += operation_text.as_str();
                 for ident in possible_idents {
                     if !defined_variables.contains(&ident) {
-                        variable_definitions += format!("let {};\n", ident).as_str();
+                        variable_definitions += format!("let mut {};\n", ident).as_str();
                         defined_variables.push(ident);
                     }
                 }
