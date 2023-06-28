@@ -38,3 +38,13 @@ pub fn take_string(s: &str) -> Option<(Arc<str>, &str)> {
         }
     }
 }
+
+pub trait Tail<T> {
+    fn tail(&self) -> &[T];
+}
+
+impl<T> Tail<T> for [T] {
+    fn tail(&self) -> &[T] {
+        return &self[1..];
+    }
+}
