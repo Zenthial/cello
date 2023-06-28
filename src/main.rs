@@ -1,4 +1,5 @@
 mod generate;
+mod lexer;
 mod parser;
 mod translate;
 

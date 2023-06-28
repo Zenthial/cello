@@ -11,7 +11,7 @@ fn main() {
     println!(
         "{}{}{}",
         format!("{}", n),
-        format!("{}", "!="),
+        format!("{}", " != "),
         format!("{}", fact)
     );
 }

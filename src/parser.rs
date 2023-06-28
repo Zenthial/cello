@@ -1,4 +1,5 @@
 #![allow(dead_code)]
+use crate::lexer;
 use std::{
     fmt::{Display, Formatter},
     sync::Arc,
@@ -81,18 +82,40 @@ impl Parser {
     fn parse_procedure(&self, procedure: &str) -> Vec<Instruction> {
         let mut instructions = vec![];
         for line in procedure.lines() {
-            let words: Vec<&str> = line.split_whitespace().collect();
-            let instruction = self.generate_instruction(words);
+            // let words: Vec<&str> = line.split_whitespace().collect();
+            let words: Vec<Arc<str>> = self.walk_line(line);
+            let str_words: Vec<&str> = words.iter().map(|w| &**w).collect();
+            let instruction = self.generate_instruction(str_words);
             instructions.push(instruction);
         }
 
         instructions
     }
 
-    fn walk_line(&self, line: &str) -> Vec<&str> {
-        let trimmed = line.trim_start();
+    fn walk_line(&self, line: &str) -> Vec<Arc<str>> {
+        let mut trimmed = line.trim_start();
+        let mut words = vec![];
 
-        loop {}
+        loop {
+            let trimmed_chars: Vec<char> = trimmed.chars().collect();
+            println!("{trimmed}");
+            let take = if trimmed_chars[0] == '"' {
+                lexer::take_string(trimmed)
+            } else {
+                lexer::take_until(trimmed, ' ')
+            };
+            println!("{:?}", take);
+
+            if let Some((word, rest)) = take {
+                words.push(word);
+                trimmed = rest.trim_start();
+            } else {
+                words.push(trimmed.into());
+                break;
+            }
+        }
+
+        return words;
     }
 
     fn generate_instruction(&self, words: Vec<&str>) -> Instruction {
