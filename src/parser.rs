@@ -6,6 +6,8 @@ use std::{
     sync::Arc,
 };
 
+pub struct Picture(IdentifierType);
+
 trait Derive {
     fn derive(val: &str) -> Self;
 }
@@ -46,6 +48,15 @@ pub enum IdentifierType {
     ImplicitDecimal,
     Sign,
     AssumedDecimal,
+}
+
+impl IdentifierType {
+    fn parse_type(string: Arc<str>) -> Self {
+        let chars: Vec<char> = string.chars().collect();
+        if chars[0] == '9' {
+            if let Some(c) = chars.get(1) {}
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -130,12 +141,45 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse(&mut self) -> Vec<Instruction> {
-        let split: Vec<&str> = self.contents.split("procedure division.").collect();
+        let pro_split: Vec<&str> = self.contents.split("procedure division.").collect();
+        let data_split: Vec<&str> = pro_split[0].split("data division.").collect();
 
-        let procedure = split.get(1).unwrap().trim_start();
+        let procedure = pro_split[1].trim_start();
+        let data = data_split[1].trim_start();
+        let variables = self.parse_data(data);
         let instructions = self.parse_procedure(procedure);
 
         instructions
+    }
+
+    fn parse_data(&self, data_segment: &'a str) -> Vec<Data> {
+        let working_storage_split: Vec<&str> =
+            data_segment.split("working-storage section.").collect();
+
+        let working_storage_section = working_storage_split[1];
+        let working_storage_data: Vec<&str> = working_storage_section.lines().collect();
+        unimplemented!()
+    }
+
+    fn parse_working_storage(&self, working_storage_lines: Vec<&str>) {
+        for line in working_storage_lines {
+            let trimmed = line.trim_start();
+            let variable = self.parse_variable(trimmed);
+        }
+    }
+
+    fn parse_variable(&self, mut line: &str) {
+        let words = get_words(line);
+
+        let level: i32 = words[0].parse().expect("cannot convert level str into i32");
+        let name = words[1];
+        let v_type = words[2];
+        let variable_definition = words[3];
+        let variable_identifier_type = IdentifierType::parse_type(variable_definition);
+        let var_type = match &*v_type {
+            "pic" => Picture(),
+            _ => unimplemented!(),
+        };
     }
 
     fn parse_procedure(&mut self, procedure: &'a str) -> Vec<Instruction> {
@@ -149,37 +193,13 @@ impl<'a> Parser<'a> {
             };
 
             // let words: Vec<&str> = line.split_whitespace().collect();
-            let words: Vec<Arc<str>> = self.walk_line(line);
+            let words: Vec<Arc<str>> = walk_line(line);
             let str_words: Vec<&str> = words.iter().map(|w| &**w).collect();
             let instruction = self.generate_instruction(str_words);
             instructions.push(instruction);
         }
 
         instructions
-    }
-
-    fn walk_line(&self, line: &str) -> Vec<Arc<str>> {
-        let mut trimmed = line.trim_start();
-        let mut words = vec![];
-
-        loop {
-            let trimmed_chars: Vec<char> = trimmed.chars().collect();
-            let take = if trimmed_chars[0] == '"' {
-                lexer::take_string(trimmed)
-            } else {
-                lexer::take_until(trimmed, ' ')
-            };
-
-            if let Some((word, rest)) = take {
-                words.push(word);
-                trimmed = rest.trim_start();
-            } else {
-                words.push(trimmed.into());
-                break;
-            }
-        }
-
-        return words;
     }
 
     fn generate_instruction(&mut self, words: Vec<&str>) -> Instruction {
@@ -258,4 +278,34 @@ impl<'a> Parser<'a> {
             insts: instructions,
         }
     }
+}
+
+fn get_words(mut line: &str) -> Vec<Arc<str>> {
+    let mut words = vec![];
+
+    loop {
+        let trimmed_chars: Vec<char> = line.chars().collect();
+        let take = if trimmed_chars[0] == '"' {
+            lexer::take_string(line)
+        } else {
+            lexer::take_until(line, ' ')
+        };
+
+        if let Some((word, rest)) = take {
+            words.push(word);
+            line = rest.trim_start();
+        } else {
+            words.push(line.into());
+            break;
+        }
+    }
+
+    return words;
+}
+
+fn walk_line(line: &str) -> Vec<Arc<str>> {
+    let mut trimmed = line.trim_start();
+    let mut words = get_words(line);
+
+    return words;
 }

@@ -1,4 +1,21 @@
+use bnum::BInt;
 use std::ops::{Add, Div, Mul, Sub};
+
+pub struct CobolInt {
+    int: BInt<144>,
+}
+
+impl CobolInt {
+    fn new() -> Self {
+        Self { int: 0.into() }
+    }
+}
+
+impl From<isize> for CobolInt {
+    fn from(int: isize) -> Self {
+        Self { int: int.into() }
+    }
+}
 
 pub struct CobolNumber {
     underlying_number: Box<[u8]>,
