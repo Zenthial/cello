@@ -15,7 +15,7 @@ fn main() {
         .to_lowercase(); // we lowercase the file here because doing it inside the parser will
                          // result in annoying lifetime errors
 
-    let mut parser = parser::Parser::new(&file_string);
+    let parser = parser::Parser::new(&file_string);
     let (data, ast) = parser.parse();
     let file = translate::translate(data, ast);
 

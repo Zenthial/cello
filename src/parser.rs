@@ -172,6 +172,7 @@ pub enum Instruction {
 pub struct Parser<'a> {
     contents: &'a str,
     lines: VecDeque<&'a str>,
+    look_up: Vec<Data>,
 }
 
 impl<'a> Parser<'a> {
@@ -179,19 +180,21 @@ impl<'a> Parser<'a> {
         Self {
             contents,
             lines: VecDeque::new(),
+            look_up: vec![],
         }
     }
 
-    pub fn parse(&mut self) -> (Vec<Data>, Vec<Instruction>) {
+    pub fn parse(mut self) -> (Vec<Data>, Vec<Instruction>) {
         let pro_split: Vec<&str> = self.contents.split("procedure division.").collect();
         let data_split: Vec<&str> = pro_split[0].split("data division.").collect();
 
         let procedure = pro_split[1].trim_start();
         let data = data_split[1].trim_start();
         let variables = self.parse_data(data);
+        self.look_up = variables;
         let instructions = self.parse_procedure(procedure);
 
-        (variables, instructions)
+        (self.look_up, instructions)
     }
 
     fn parse_data(&self, data_segment: &'a str) -> Vec<Data> {
