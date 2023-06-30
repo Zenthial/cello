@@ -12,13 +12,10 @@ rug = { version = \"1\", default-features = false, features = [\"integer\"] }
 ";
 
 pub fn generate(output: String) -> std::io::Result<()> {
-    if Path::new("out").is_dir() {
-        if let Err(e) = fs::remove_dir_all("out/src") {
-            panic!("{}", e);
-        }
+    if !Path::new("out").is_dir() {
+        fs::create_dir_all("out/src")?;
     }
 
-    fs::create_dir_all("out/src")?;
     fs::write("out/src/main.rs", output)?;
     fs::write("out/Cargo.toml", CARGO)?;
 

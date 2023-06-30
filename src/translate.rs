@@ -19,20 +19,25 @@ fn generate_move(infix: Infix) -> (String, Vec<Arc<str>>) {
         possible_idents_to_generate.push(inf);
     }
 
-    let text = format!("{} = {};\n", infix.right.name, left);
+    let text = if let IdentifierType::Alphanumeric(_) = infix.right.kind {
+        format!("{} = {}.to_string();\n", infix.right.name, left)
+    } else {
+        format!("{} = {}.into();\n", infix.right.name, left)
+    };
+
     (text, possible_idents_to_generate)
 }
 
 fn generate_add(infix: Infix) -> String {
     let (left, _) = value_to_string(infix.left);
 
-    return format!("{} += {};\n", infix.right.name, left);
+    return format!("{} += &{};\n", infix.right.name, left);
 }
 
 fn generate_multiply(infix: Infix) -> String {
     let (left, _) = value_to_string(infix.left);
 
-    return format!("{} *= {};\n", infix.right.name, left);
+    return format!("{} *= &{};\n", infix.right.name, left);
 }
 
 fn generate_repeat(left: Value, condition: Condition, right: Value) -> String {
@@ -112,7 +117,11 @@ pub fn translate(data: Vec<Data>, instructions: Vec<Instruction>) -> String {
         let type_str = match var.data_type {
             DataType::Picture(ident_type) => match ident_type {
                 IdentifierType::Numeric(size) => {
-                    format!(": Integer = {}.into()", "1".repeat(size as usize))
+                    format!(
+                        ": Integer = Integer::new();\n{}.assign(Integer::parse(\"{}\").unwrap())",
+                        var.name,
+                        "1".repeat(size as usize)
+                    )
                 }
                 IdentifierType::Alphanumeric(size) => {
                     format!("= String::from(\"{}\")", "0".repeat(size as usize))
@@ -128,7 +137,7 @@ pub fn translate(data: Vec<Data>, instructions: Vec<Instruction>) -> String {
     }
 
     return format!(
-        "use rug::Integer;\n\nfn main() {{\n{}\n{}}}",
+        "use rug::{{Assign, Integer}};\n\nfn main() {{\n{}\n{}}}",
         variable_definitions, operations
     );
 }

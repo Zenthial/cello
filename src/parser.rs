@@ -6,7 +6,7 @@ use std::{
     sync::Arc,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum DataType {
     Picture(IdentifierType),
 }
@@ -50,7 +50,7 @@ impl Derive for Condition {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum IdentifierType {
     Numeric(u32),
     Alphabetic,
@@ -104,7 +104,7 @@ impl IdentifierType {
 #[derive(Debug)]
 pub struct Ident {
     pub name: Arc<str>,
-    kind: IdentifierType,
+    pub kind: IdentifierType,
 }
 
 impl Ident {
@@ -284,9 +284,17 @@ impl<'a> Parser<'a> {
         let src = operands[0];
         let dest = operands[2];
 
+        let DataType::Picture(i_type) = self
+            .look_up
+            .iter()
+            .find(|v| &*v.name == dest)
+            .unwrap()
+            .data_type
+            .clone();
+
         let infix = Infix {
             left: Value::derive(src),
-            right: Ident::new(dest, IdentifierType::Numeric(0)),
+            right: Ident::new(dest, i_type),
         };
 
         match inst {
