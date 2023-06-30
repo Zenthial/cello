@@ -6,7 +6,17 @@ use std::{
     sync::Arc,
 };
 
-pub struct Picture(IdentifierType);
+#[derive(Debug)]
+pub enum DataType {
+    Picture(IdentifierType),
+}
+
+#[derive(Debug)]
+pub struct Data {
+    pub level: i32,
+    pub name: Arc<str>,
+    pub data_type: DataType,
+}
 
 trait Derive {
     fn derive(val: &str) -> Self;
@@ -22,9 +32,9 @@ pub enum Condition {
 impl ToString for Condition {
     fn to_string(&self) -> String {
         match self {
-            Condition::EqualTo => return String::from("="),
-            Condition::GreaterThan => return String::from(">"),
-            Condition::LessThan => return String::from("<"),
+            Condition::EqualTo => String::from("="),
+            Condition::GreaterThan => String::from(">"),
+            Condition::LessThan => String::from("<"),
         }
     }
 }
@@ -42,9 +52,9 @@ impl Derive for Condition {
 
 #[derive(Debug)]
 pub enum IdentifierType {
-    Numeric(usize),
+    Numeric(u32),
     Alphabetic,
-    Alphanumeric,
+    Alphanumeric(u32),
     ImplicitDecimal,
     Sign,
     AssumedDecimal,
@@ -53,8 +63,40 @@ pub enum IdentifierType {
 impl IdentifierType {
     fn parse_type(string: Arc<str>) -> Self {
         let chars: Vec<char> = string.chars().collect();
+        let num = if let Some(c) = chars.get(1) {
+            if *c == '(' {
+                let mut num = String::new();
+                let mut index = 2;
+                loop {
+                    let digit = chars[index];
+                    if digit == ')' {
+                        break;
+                    } else {
+                        num.push(digit);
+                        index += 1;
+                        if index > 100 {
+                            panic!("forgot closing )");
+                        }
+                    }
+                }
+                let amount: u32 = num
+                    .parse()
+                    .expect("defined var has () without a number inside");
+
+                amount
+            } else {
+                chars.len() as u32
+            }
+        } else {
+            1
+        };
+
         if chars[0] == '9' {
-            if let Some(c) = chars.get(1) {}
+            IdentifierType::Numeric(num)
+        } else if chars[0] == 'x' {
+            IdentifierType::Alphanumeric(num)
+        } else {
+            unimplemented!()
         }
     }
 }
@@ -140,7 +182,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn parse(&mut self) -> Vec<Instruction> {
+    pub fn parse(&mut self) -> (Vec<Data>, Vec<Instruction>) {
         let pro_split: Vec<&str> = self.contents.split("procedure division.").collect();
         let data_split: Vec<&str> = pro_split[0].split("data division.").collect();
 
@@ -149,7 +191,7 @@ impl<'a> Parser<'a> {
         let variables = self.parse_data(data);
         let instructions = self.parse_procedure(procedure);
 
-        instructions
+        (variables, instructions)
     }
 
     fn parse_data(&self, data_segment: &'a str) -> Vec<Data> {
@@ -158,28 +200,43 @@ impl<'a> Parser<'a> {
 
         let working_storage_section = working_storage_split[1];
         let working_storage_data: Vec<&str> = working_storage_section.lines().collect();
-        unimplemented!()
+        let ws_data = self.parse_working_storage(working_storage_data);
+
+        ws_data
     }
 
-    fn parse_working_storage(&self, working_storage_lines: Vec<&str>) {
-        for line in working_storage_lines {
-            let trimmed = line.trim_start();
-            let variable = self.parse_variable(trimmed);
-        }
+    fn parse_working_storage(&self, working_storage_lines: Vec<&str>) -> Vec<Data> {
+        working_storage_lines
+            .iter()
+            .filter(|l| l.trim() != "")
+            .map(|line| {
+                let trimmed = line.trim_start();
+                let variable = self.parse_variable(trimmed);
+
+                return variable;
+            })
+            .collect()
     }
 
-    fn parse_variable(&self, mut line: &str) {
+    fn parse_variable(&self, line: &str) -> Data {
+        println!("{}", line);
         let words = get_words(line);
 
         let level: i32 = words[0].parse().expect("cannot convert level str into i32");
-        let name = words[1];
-        let v_type = words[2];
-        let variable_definition = words[3];
+        let name = words[1].clone();
+        let v_type = words[2].clone();
+        let variable_definition = words[3].clone();
         let variable_identifier_type = IdentifierType::parse_type(variable_definition);
         let var_type = match &*v_type {
-            "pic" => Picture(),
+            "pic" => DataType::Picture(variable_identifier_type),
             _ => unimplemented!(),
         };
+
+        Data {
+            level,
+            name,
+            data_type: var_type,
+        }
     }
 
     fn parse_procedure(&mut self, procedure: &'a str) -> Vec<Instruction> {
@@ -265,7 +322,7 @@ impl<'a> Parser<'a> {
             }
 
             // let words: Vec<&str> = line.split_whitespace().collect();
-            let words: Vec<Arc<str>> = self.walk_line(line);
+            let words: Vec<Arc<str>> = walk_line(line);
             let str_words: Vec<&str> = words.iter().map(|w| &**w).collect();
             let instruction = self.generate_instruction(str_words);
             instructions.push(instruction);
@@ -304,8 +361,8 @@ fn get_words(mut line: &str) -> Vec<Arc<str>> {
 }
 
 fn walk_line(line: &str) -> Vec<Arc<str>> {
-    let mut trimmed = line.trim_start();
-    let mut words = get_words(line);
+    let trimmed = line.trim_start();
+    let words = get_words(trimmed);
 
     return words;
 }

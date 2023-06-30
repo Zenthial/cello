@@ -1,4 +1,4 @@
-use crate::parser::{Condition, Infix, Instruction, Value};
+use crate::parser::{Condition, Data, DataType, IdentifierType, Infix, Instruction, Value};
 
 use std::sync::Arc;
 
@@ -46,8 +46,7 @@ fn generate_repeat(left: Value, condition: Condition, right: Value) -> String {
     )
 }
 
-fn translate_core(instructions: Vec<Instruction>) -> (String, Vec<Arc<str>>, String) {
-    let mut variable_definitions = String::new();
+fn translate_core(instructions: Vec<Instruction>) -> (Vec<Arc<str>>, String) {
     let mut defined_variables = vec![];
     let mut operations = String::new();
 
@@ -59,7 +58,6 @@ fn translate_core(instructions: Vec<Instruction>) -> (String, Vec<Arc<str>>, Str
                 operations += operation_text.as_str();
                 for ident in possible_idents {
                     if !defined_variables.contains(&ident) {
-                        variable_definitions += format!("let mut {};\n", ident).as_str();
                         defined_variables.push(ident);
                     }
                 }
@@ -91,10 +89,9 @@ fn translate_core(instructions: Vec<Instruction>) -> (String, Vec<Arc<str>>, Str
                 insts,
             } => {
                 let operation_text = generate_repeat(left, condition, right);
-                let (_, defined, instruction_text) = translate_core(insts);
+                let (defined, instruction_text) = translate_core(insts);
                 for ident in defined {
                     if !defined_variables.contains(&ident) {
-                        variable_definitions += format!("let mut {};\n", ident).as_str();
                         defined_variables.push(ident);
                     }
                 }
@@ -105,10 +102,33 @@ fn translate_core(instructions: Vec<Instruction>) -> (String, Vec<Arc<str>>, Str
         }
     }
 
-    (variable_definitions, defined_variables, operations)
+    (defined_variables, operations)
 }
 
-pub fn translate(instructions: Vec<Instruction>) -> String {
-    let (variable_definitions, _, operations) = translate_core(instructions);
-    return format!("fn main() {{\n{}\n{}}}", variable_definitions, operations);
+pub fn translate(data: Vec<Data>, instructions: Vec<Instruction>) -> String {
+    let (used_variables, operations) = translate_core(instructions);
+    let mut variable_definitions = String::new();
+    for var in data {
+        let type_str = match var.data_type {
+            DataType::Picture(ident_type) => match ident_type {
+                IdentifierType::Numeric(size) => {
+                    format!(": Integer = {}.into()", "1".repeat(size as usize))
+                }
+                IdentifierType::Alphanumeric(size) => {
+                    format!("= String::from(\"{}\")", "0".repeat(size as usize))
+                }
+                _ => unreachable!(),
+            },
+        };
+        if used_variables.contains(&var.name) {
+            variable_definitions += &format!("let mut {}{};\n", var.name, type_str);
+        } else {
+            variable_definitions += &format!("let {}{};\n", var.name, type_str);
+        }
+    }
+
+    return format!(
+        "use rug::Integer;\n\nfn main() {{\n{}\n{}}}",
+        variable_definitions, operations
+    );
 }

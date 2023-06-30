@@ -1,4 +1,3 @@
-mod cobol;
 mod generate;
 mod lexer;
 mod parser;
@@ -17,8 +16,8 @@ fn main() {
                          // result in annoying lifetime errors
 
     let mut parser = parser::Parser::new(&file_string);
-    let ast = parser.parse();
-    let file = translate::translate(ast);
+    let (data, ast) = parser.parse();
+    let file = translate::translate(data, ast);
 
     if let Err(e) = generate::generate(file) {
         panic!("{}", e);
