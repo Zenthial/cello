@@ -9,6 +9,7 @@ pub fn generate(output: String, file_name: String) -> std::io::Result<()> {
 
     let name = file_name.split(".").into_iter().next().unwrap();
 
+    #[cfg(dev)]
     let cargo_toml = format!(
         "[package]
 name = \"{}\"
@@ -17,6 +18,18 @@ edition = \"2021\"
 
 [dependencies]
 conum = {{ path = \"../../conum/\" }}
+    ",
+        name
+    );
+    #[cfg(not(dev))]
+    let cargo_toml = format!(
+        "[package]
+name = \"{}\"
+version = \"0.1.0\"
+edition = \"2021\"
+
+[dependencies]
+conum = \"*\"
     ",
         name
     );

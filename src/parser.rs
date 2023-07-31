@@ -273,7 +273,7 @@ impl<'a> Parser<'a> {
             "move" | "add" | "multiply" => self.generate_infix_instruction(instruction, tail),
             "display" => self.generate_print(tail),
             "perform" => self.generate_perform(tail),
-            _ => unimplemented!(),
+            _ => panic!("unimplemented instruction {instruction}"),
         }
     }
 
