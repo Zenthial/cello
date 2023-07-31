@@ -86,7 +86,9 @@ impl IdentifierType {
 
                 amount
             } else {
-                chars.len() as u32
+                // hack, need to parse for the period that ends the line. right now i am just
+                // counting it and then subtracting 1
+                chars.len() as u32 - 1
             }
         } else {
             1

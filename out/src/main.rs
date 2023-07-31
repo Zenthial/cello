@@ -1,11 +1,11 @@
 #![allow(unused)]
 
-use conum::Num;
+use conum::{Num, NumFrom};
 fn main() {
-    let mut fact: Num<18> = Num::zero();
-    let mut n: Num<18> = Num::zero();
-    let mut i: Num<18> = Num::zero();
-    let mut ist = String::from("000000000000000000");
+    let mut fact: Num<15> = Num::zero();
+    let mut n: Num<2> = Num::zero();
+    let mut i: Num<2> = Num::zero();
+    let mut ist = String::from("00");
     let mut factst = String::from("000000000000000000");
 
     n = 16.into();
@@ -15,7 +15,7 @@ fn main() {
         if i > n {
             break;
         }
-        ist = i.to_string();
+        ist = i.to_zeroed_string();
         factst = fact.to_zeroed_string();
         println!(
             "{}{}{}",
@@ -24,6 +24,6 @@ fn main() {
             format!("{}", factst)
         );
         i += 1;
-        fact *= &i;
+        fact *= fact.convert(&i);
     }
 }

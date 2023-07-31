@@ -43,7 +43,11 @@ fn generate_add(infix: Infix) -> String {
 fn generate_multiply(infix: Infix) -> String {
     let (left, _) = value_to_string(infix.left);
 
-    return format!("{} *= &{};\n", infix.right.name, left);
+    return format!(
+        "{name} *= {name}.convert(&{mult});\n",
+        name = infix.right.name,
+        mult = left
+    );
 }
 
 fn generate_repeat(left: Value, condition: Condition, right: Value) -> String {
@@ -119,28 +123,28 @@ fn translate_core(instructions: Vec<Instruction>) -> (Vec<Arc<str>>, String) {
 pub fn translate(data: Vec<Data>, instructions: Vec<Instruction>) -> String {
     let (used_variables, operations) = translate_core(instructions);
     let mut variable_definitions = String::new();
-    let s = data.iter().fold(0, |acc, x| {
-        if let DataType::Picture(ident_type) = &x.data_type {
-            match ident_type {
-                IdentifierType::Numeric(size) | IdentifierType::Alphanumeric(size) => {
-                    if acc < *size {
-                        return *size;
-                    }
-                }
-                _ => {}
-            }
-        }
-
-        acc
-    });
+    // let s = data.iter().fold(0, |acc, x| {
+    //     if let DataType::Picture(ident_type) = &x.data_type {
+    //         match ident_type {
+    //             IdentifierType::Numeric(size) | IdentifierType::Alphanumeric(size) => {
+    //                 if acc < *size {
+    //                     return *size;
+    //                 }
+    //             }
+    //             _ => {}
+    //         }
+    //     }
+    //
+    //     acc
+    // });
 
     for var in data {
         let type_str = match var.data_type {
             DataType::Picture(ident_type) => match ident_type {
-                IdentifierType::Numeric(_) => {
+                IdentifierType::Numeric(s) => {
                     format!(": Num<{}> = Num::zero();", s)
                 }
-                IdentifierType::Alphanumeric(_) => {
+                IdentifierType::Alphanumeric(s) => {
                     format!("= String::from(\"{}\")", "0".repeat(s as usize))
                 }
                 _ => unreachable!(),
@@ -155,7 +159,7 @@ pub fn translate(data: Vec<Data>, instructions: Vec<Instruction>) -> String {
     }
 
     return format!(
-        "#![allow(unused)]\n\nuse conum::Num;\nfn main() {{\n{}\n{}}}",
+        "#![allow(unused)]\n\nuse conum::{{Num, NumFrom}};\nfn main() {{\n{}\n{}}}",
         variable_definitions, operations
     );
 }
