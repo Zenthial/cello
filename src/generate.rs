@@ -2,22 +2,27 @@ use std::fs;
 use std::path::Path;
 use std::process::Command;
 
-const CARGO: &str = "[package]
-name = \"COBOL-to-Rust\"
-version = \"0.1.0\"
-edition = \"2021\"
-
-[dependencies]
-rug = { version = \"1\", default-features = false, features = [\"integer\"] }
-";
-
-pub fn generate(output: String) -> std::io::Result<()> {
+pub fn generate(output: String, file_name: String) -> std::io::Result<()> {
     if !Path::new("out").is_dir() {
         fs::create_dir_all("out/src")?;
     }
 
+    let name = file_name.split(".").into_iter().next().unwrap();
+
+    let cargo_toml = format!(
+        "[package]
+name = \"{}\"
+version = \"0.1.0\"
+edition = \"2021\"
+
+[dependencies]
+conum = {{ path = \"../../conum/\" }}
+    ",
+        name
+    );
+
     fs::write("out/src/main.rs", output)?;
-    fs::write("out/Cargo.toml", CARGO)?;
+    fs::write("out/Cargo.toml", cargo_toml)?;
 
     Command::new("cargo")
         .args(["fmt", "--manifest-path", "out/Cargo.toml"])

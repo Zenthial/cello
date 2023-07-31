@@ -20,7 +20,7 @@ fn generate_move(infix: Infix) -> (String, Vec<Arc<str>>) {
     }
 
     let text = if let IdentifierType::Alphanumeric(_) = infix.right.kind {
-        format!("{} = {}.to_string();\n", infix.right.name, left)
+        format!("{} = {}.to_zeroed_string();\n", infix.right.name, left)
     } else {
         format!("{} = {}.into();\n", infix.right.name, left)
     };
@@ -29,9 +29,15 @@ fn generate_move(infix: Infix) -> (String, Vec<Arc<str>>) {
 }
 
 fn generate_add(infix: Infix) -> String {
+    let needs_ref = match &infix.left {
+        Value::Number(_) => "",
+        Value::Identifier(_) => "&",
+        Value::String(_) => "",
+    };
+
     let (left, _) = value_to_string(infix.left);
 
-    return format!("{} += &{};\n", infix.right.name, left);
+    return format!("{} += {needs_ref}{};\n", infix.right.name, left);
 }
 
 fn generate_multiply(infix: Infix) -> String {
@@ -113,21 +119,33 @@ fn translate_core(instructions: Vec<Instruction>) -> (Vec<Arc<str>>, String) {
 pub fn translate(data: Vec<Data>, instructions: Vec<Instruction>) -> String {
     let (used_variables, operations) = translate_core(instructions);
     let mut variable_definitions = String::new();
+    let s = data.iter().fold(0, |acc, x| {
+        if let DataType::Picture(ident_type) = &x.data_type {
+            match ident_type {
+                IdentifierType::Numeric(size) | IdentifierType::Alphanumeric(size) => {
+                    if acc < *size {
+                        return *size;
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        acc
+    });
+
     for var in data {
         let type_str = match var.data_type {
             DataType::Picture(ident_type) => match ident_type {
-                IdentifierType::Numeric(size) => {
-                    format!(
-                        ": Integer = Integer::new();\n{}.assign(Integer::parse(\"{}\").unwrap())",
-                        var.name,
-                        "1".repeat(size as usize)
-                    )
+                IdentifierType::Numeric(_) => {
+                    format!(": Num<{}> = Num::zero();", s)
                 }
-                IdentifierType::Alphanumeric(size) => {
-                    format!("= String::from(\"{}\")", "0".repeat(size as usize))
+                IdentifierType::Alphanumeric(_) => {
+                    format!("= String::from(\"{}\")", "0".repeat(s as usize))
                 }
                 _ => unreachable!(),
             },
+            _ => unimplemented!(),
         };
         if used_variables.contains(&var.name) {
             variable_definitions += &format!("let mut {}{};\n", var.name, type_str);
@@ -137,7 +155,7 @@ pub fn translate(data: Vec<Data>, instructions: Vec<Instruction>) -> String {
     }
 
     return format!(
-        "use rug::{{Assign, Integer}};\n\nfn main() {{\n{}\n{}}}",
+        "#![allow(unused)]\n\nuse conum::Num;\nfn main() {{\n{}\n{}}}",
         variable_definitions, operations
     );
 }

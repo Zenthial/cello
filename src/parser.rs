@@ -9,6 +9,7 @@ use std::{
 #[derive(Debug, Clone)]
 pub enum DataType {
     Picture(IdentifierType),
+    Other,
 }
 
 #[derive(Debug)]
@@ -284,13 +285,16 @@ impl<'a> Parser<'a> {
         let src = operands[0];
         let dest = operands[2];
 
-        let DataType::Picture(i_type) = self
+        let DataType::Picture(i_type) = self 
             .look_up
             .iter()
             .find(|v| &*v.name == dest)
             .unwrap()
             .data_type
-            .clone();
+            .clone()
+        else {
+            unimplemented!()
+        };
 
         let infix = Infix {
             left: Value::derive(src),

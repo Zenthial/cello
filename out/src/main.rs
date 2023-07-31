@@ -1,13 +1,11 @@
-use rug::{Assign, Integer};
+#![allow(unused)]
 
+use conum::Num;
 fn main() {
-    let mut fact: Integer = Integer::new();
-    fact.assign(Integer::parse("111111111111111").unwrap());
-    let mut n: Integer = Integer::new();
-    n.assign(Integer::parse("111").unwrap());
-    let mut i: Integer = Integer::new();
-    i.assign(Integer::parse("111").unwrap());
-    let mut ist = String::from("000");
+    let mut fact: Num<18> = Num::zero();
+    let mut n: Num<18> = Num::zero();
+    let mut i: Num<18> = Num::zero();
+    let mut ist = String::from("000000000000000000");
     let mut factst = String::from("000000000000000000");
 
     n = 16.into();
@@ -18,14 +16,14 @@ fn main() {
             break;
         }
         ist = i.to_string();
-        factst = fact.to_string();
+        factst = fact.to_zeroed_string();
         println!(
             "{}{}{}",
             format!("{}", ist),
             format!("{}", "! = "),
             format!("{}", factst)
         );
-        i += &1;
+        i += 1;
         fact *= &i;
     }
 }
